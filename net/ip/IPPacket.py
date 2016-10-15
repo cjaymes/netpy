@@ -17,7 +17,9 @@
 
 import inspect
 
-class IPPacket():
+from net.Message import Message
+
+class IPPacket(Message):
     @staticmethod
     def from_bytes(buf):
         raise NotImplementedError(inspect.stack()[0][3] + '() has not been implemented in subclass: ' + self.__class__.__name__)
