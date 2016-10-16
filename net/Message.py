@@ -122,9 +122,27 @@ class Message():
 
         return value
 
-    def _unpack_terminated_string(self, terminator='\0'):
+    def _unpack_terminated_string(self, terminator='\x00'):
+        if len(terminator) != 1:
+            raise ValueError('Terminator must be a 1 byte string')
         self.__align()
-        pass
+
+        terminator = ord(terminator[0])
+        value = ''
+        i = self._byte_offset
+        while(True):
+            if i == len(self._buffer):
+                raise IndexError('Reached end of buffer without finding terminator ' + str(terminator))
+            if self._buffer[i] == terminator:
+                break
+            # TODO add unicode support
+            value += chr(self._buffer[i])
+            i += 1
+        logger.debug('Unpacked: ' + str(value))
+
+        self.__set_byte_offset(i)
+
+        return value
 
     def _unpack_signed_integer(self, bits=8, byte_order=BYTE_ORDER_NATIVE):
         pass

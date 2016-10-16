@@ -91,12 +91,15 @@ def test_unpack_pascal_string_beyond_end():
     with pytest.raises(IndexError):
         msg._unpack_pascal_string()
 
-# def test_unpack_terminated_string():
-#     assert(False)
-#
-# def test_unpack_unterminated_string():
-#     assert(False)
-#
+def test_unpack_terminated_string():
+    msg = Message(b'\x48\x65\x6c\x6c\x6f\x00')
+    assert(msg._unpack_terminated_string() == 'Hello')
+
+def test_unpack_unterminated_string():
+    msg = Message(b'\x48\x65\x6c\x6c\x6f')
+    with pytest.raises(IndexError):
+        msg._unpack_terminated_string()
+
 # def test_unpack_big_endian_byte_order():
 #     assert(False)
 #
