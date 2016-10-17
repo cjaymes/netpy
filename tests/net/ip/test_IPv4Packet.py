@@ -18,6 +18,9 @@
 import sys
 import os
 sys.path.insert(0, os.path.abspath("."))
+import logging
+logging.basicConfig(level=logging.DEBUG)
+import pytest
 import ipaddress
 
 import net.ip
