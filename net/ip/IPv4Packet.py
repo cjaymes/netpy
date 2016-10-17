@@ -57,7 +57,7 @@ class IPv4Packet(IPPacket):
         pkt.fragment_offset = bs.read('uint:13')
         pkt.time_to_live = bs.read('uint:8')
         pkt.protocol = bs.read('uint:8')
-        # The checksum field is the 16 bit one's complement of the one's
+        # TODO The checksum field is the 16 bit one's complement of the one's
         # complement sum of all 16 bit words in the header.  For purposes of
         # computing the checksum, the value of the checksum field is zero.
         pkt.header_checksum = bs.read('uint:16')
@@ -69,8 +69,9 @@ class IPv4Packet(IPPacket):
         elif pkt.ihl >= 6 and pkt.ihl <= 15:
             pkt.options = []
             while(True):
-                if bs.bytepos >= pkt.ihl * 8:
+                if bs.bytepos >= pkt.ihl * 4:
                     break
+                #TODO padding (always ends on 32 bit boundary; implicit end of list)
                 option = {}
                 option['copy'] = bs.read('bool')
                 option['class'] = bs.read('uint:2')
