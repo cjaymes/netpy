@@ -139,6 +139,9 @@ class IPv4Packet(IPPacket):
 
         return pkt
 
+    def to_bytes():
+        raise NotImplementedError(inspect.stack()[0][3] + '() has not been implemented in subclass: ' + self.__class__.__name__)
+
     def __str__(self):
         return 'IP Packet Version: ' + str(self.version) \
             + ', IHL: ' + str(self.ihl) \
