@@ -15,27 +15,22 @@
 # You should have received a copy of the GNU General Public License
 # along with NetPy.  If not, see <http://www.gnu.org/licenses/>.
 
-from bitstring import BitStream
+import sys
+import os
+sys.path.insert(0, os.path.abspath("."))
 import logging
+logging.basicConfig(level=logging.DEBUG)
 
-from net.Structure import Structure
+from net.dcerpc.ndr.FormatLabel import FormatLabel
 
-logger = logging.getLogger(__name__)
-class FormatLabel(Structure):
-    _FORMAT = (
-        ('int_repr', 'uint:4'),
-        ('char_repr', 'uint:4'),
-        ('float_repr', 'uint:8'),
-        ('reserved0', 'pad:8'),
-        ('reserved1', 'pad:8'),
-    )
-    FORMAT_CHAR_ASCII = 0
-    FORMAT_CHAR_EBCDIC = 1
+TEST1 = b'\x00\x00\x00\x00'
 
-    BYTE_ORDER_BIG_ENDIAN = 0
-    BYTE_ORDER_LITTLE_ENDIAN = 1
+def test_from_bytes():
+    lbl = FormatLabel.from_bytes(TEST1)
+    assert(lbl.int_repr == FormatLabel.FORMAT_CHAR_ASCII)
+    assert(lbl.char_repr == FormatLabel.BYTE_ORDER_BIG_ENDIAN)
+    assert(lbl.float_repr == FormatLabel.FORMAT_FLOAT_IEEE)
 
-    FORMAT_FLOAT_IEEE   = 0
-    FORMAT_FLOAT_VAX    = 1
-    FORMAT_FLOAT_CRAY   = 2
-    FORMAT_FLOAT_IBM    = 3
+def test_to_bytes():
+    lbl = FormatLabel.from_bytes(TEST1)
+    assert(lbl.to_bytes() == TEST1)
