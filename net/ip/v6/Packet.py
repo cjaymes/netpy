@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with NetPy.  If not, see <http://www.gnu.org/licenses/>.
 
-from net.ip.IPPacket import IPPacket
+from net.Structure import Structure
 
-class IPv6Packet(IPPacket):
+class Packet(Structure):
     pass

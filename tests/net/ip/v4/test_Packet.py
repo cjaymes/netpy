@@ -53,7 +53,7 @@ TEST1 = b'\x45\x00\
 \x4e\x20\x31\x2f\x31\x2f\x30\x37\x2f\x30\x31\x3a\x31\x2e\x30\x2e\
 \x31\xff'
 
-def test_parse():
+def test_from_bytes():
     pkt = net.ip.from_bytes(TEST1)
     assert(pkt.version == 4)
     assert(pkt.ihl == 5)
@@ -69,3 +69,7 @@ def test_parse():
     assert(pkt.header_checksum == 0x77cc)
     assert(pkt.source == ipaddress.IPv4Address('172.22.178.234'))
     assert(pkt.destination == ipaddress.IPv4Address('10.10.8.240'))
+
+def test_to_bytes():
+    pkt = net.ip.from_bytes(TEST1)
+    assert(pkt.to_bytes() == TEST1)

@@ -44,7 +44,7 @@ class FormatLabel(Structure):
         bs.read('uint:8')   # reserved
         bs.read('uint:8')   # reserved
 
-    def to_bytes():
+    def to_bytes(self):
         bs = bitstring.pack('uint:4, uint:4, uint:8, 0xFF, 0xFF', \
             self.int_repr, self.char_repr, self.float_repr)
         return bs.tobytes()

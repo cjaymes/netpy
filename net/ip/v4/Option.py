@@ -15,6 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with NetPy.  If not, see <http://www.gnu.org/licenses/>.
 
+import bitstring
 from bitstring import BitStream
 import logging
 import ipaddress
@@ -22,23 +23,23 @@ import ipaddress
 from net.ip.IPPacket import IPPacket
 
 logger = logging.getLogger(__name__)
-class IPv4Packet(IPPacket):
-    IP_OPTION_CLASS_CONTROL = 0
+class Option(Structure):
+    CLASS_CONTROL = 0
     # (reserved) = 1
-    IP_OPTION_CLASS_DEBUG_MEASURE = 2
+    CLASS_DEBUG_MEASURE = 2
     # (reserved) = 3
 
-    # IP_OPTION_CLASS_CONTROL
-    IP_OPTION_NUMBER_END_OF_OPTION_LIST = 0
-    IP_OPTION_NUMBER_NO_OPERATION = 1
-    IP_OPTION_NUMBER_SECURITY = 2
-    IP_OPTION_NUMBER_LOOSE_SOURCE_ROUTING = 3
-    IP_OPTION_NUMBER_RECORD_ROUTE = 7
-    IP_OPTION_NUMBER_STREAM_ID = 8
-    IP_OPTION_NUMBER_STRICT_SOURCE_ROUTING = 9
+    # CLASS_CONTROL
+    NUMBER_END_OF_OPTION_LIST = 0
+    NUMBER_NO_OPERATION = 1
+    NUMBER_SECURITY = 2
+    NUMBER_LOOSE_SOURCE_ROUTING = 3
+    NUMBER_RECORD_ROUTE = 7
+    NUMBER_STREAM_ID = 8
+    NUMBER_STRICT_SOURCE_ROUTING = 9
 
-    # IP_OPTION_CLASS_DEBUG_MEASURE
-    IP_OPTION_NUMBER_INTERNET_TIMESTAMP = 4
+    # CLASS_DEBUG_MEASURE
+    NUMBER_INTERNET_TIMESTAMP = 4
 
     @staticmethod
     def from_bytes(buf):
@@ -77,40 +78,40 @@ class IPv4Packet(IPPacket):
                 option['class'] = bs.read('uint:2')
                 option['number'] = bs.read('uint:5')
 
-                if option['class'] == IPv4Packet.IP_OPTION_CLASS_CONTROL:
-                    if option['number'] == IPv4Packet.IP_OPTION_NUMBER_END_OF_OPTION_LIST:
+                if option['class'] == IPv4Packet.CLASS_CONTROL:
+                    if option['number'] == IPv4Packet.NUMBER_END_OF_OPTION_LIST:
                         # end of options list
                         # no length or data
                         break
-                    elif option['number'] == IPv4Packet.IP_OPTION_NUMBER_NO_OPERATION:
+                    elif option['number'] == IPv4Packet.NUMBER_NO_OPERATION:
                         # no operation
                         # no length or data
                         pass
-                    elif option['number'] == IPv4Packet.IP_OPTION_NUMBER_SECURITY:
+                    elif option['number'] == IPv4Packet.NUMBER_SECURITY:
                         # Security RFC 791
                         # 11 octet length
                         option['length'] = bs.unpack('uint:8')
                         if option['length'] != 11:
                             raise RuntimeError('Security IP Option with length other than 11')
                         option['data'] = bs.unpack('bytes:' + str(option['length'] - 2))
-                    elif option['number'] == IPv4Packet.IP_OPTION_NUMBER_LOOSE_SOURCE_ROUTING:
+                    elif option['number'] == IPv4Packet.NUMBER_LOOSE_SOURCE_ROUTING:
                         # Loose Source Routing
                         # var octet length
                         option['length'] = bs.unpack('uint:8')
                         option['data'] = bs.unpack('bytes:' + str(option['length'] - 2))
-                    elif option['number'] == IPv4Packet.IP_OPTION_NUMBER_RECORD_ROUTE:
+                    elif option['number'] == IPv4Packet.NUMBER_RECORD_ROUTE:
                         # Record Route
                         # var octet length
                         option['length'] = bs.unpack('uint:8')
                         option['data'] = bs.unpack('bytes:' + str(option['length'] - 2))
-                    elif option['number'] == IPv4Packet.IP_OPTION_NUMBER_STREAM_ID:
+                    elif option['number'] == IPv4Packet.NUMBER_STREAM_ID:
                         # Stream ID
                         # 4 octet length
                         option['length'] = bs.unpack('uint:8')
                         if option['length'] != 4:
                             raise RuntimeError('Stream ID IP Option with length other than 4')
                         option['data'] = bs.unpack('bytes:' + str(option['length'] - 2))
-                    elif option['number'] == IPv4Packet.IP_OPTION_NUMBER_STRICT_SOURCE_ROUTING:
+                    elif option['number'] == IPv4Packet.NUMBER_STRICT_SOURCE_ROUTING:
                         # Strict Source Routing
                         # var octet length
                         option['length'] = bs.unpack('uint:8')
@@ -119,8 +120,8 @@ class IPv4Packet(IPPacket):
                         raise RuntimeError('Unknown IP option: ' \
                             + 'class: ' + str(option['class'] \
                             + ', number: ' + str(option['number'])))
-                elif option['class'] == IPv4Packet.IP_OPTION_CLASS_DEBUG_MEASURE:
-                    if option['number'] == IPv4Packet.IP_OPTION_NUMBER_INTERNET_TIMESTAMP:
+                elif option['class'] == IPv4Packet.CLASS_DEBUG_MEASURE:
+                    if option['number'] == IPv4Packet.NUMBER_INTERNET_TIMESTAMP:
                         # Internet Timestamp
                         # var octet length
                         option['length'] = bs.unpack('uint:8')
@@ -139,8 +140,40 @@ class IPv4Packet(IPPacket):
 
         return pkt
 
-    def to_bytes():
-        raise NotImplementedError(inspect.stack()[0][3] + '() has not been implemented in subclass: ' + self.__class__.__name__)
+    def to_bytes(self):
+        
+        bs = bitstring.pack(\
+            'uint:4, \
+            uint:4, \
+            uint:6, \
+            uint:2, \
+            uint:16, \
+            uint:16, \
+            bool, \
+            bool, \
+            bool, \
+            uint:8, \
+            uint:8, \
+            uint:16, \
+            uint:32, \
+            uint:32', \
+            self.version, \
+            self.ihl, \
+            self.dscp, \
+            self.ecn, \
+            self.total_length, \
+            self.ident, \
+            self.flag_reserved, \
+            self.flag_dont_fragment, \
+            self.flag_more_fragments, \
+            self.fragment_offset, \
+            self.time_to_live, \
+            self.protocol, \
+            self.header_checksum, \
+            int(self.source), \
+            int(self.destination))
+        # TODO ip options
+        return bs.tobytes()
 
     def __str__(self):
         return 'IP Packet Version: ' + str(self.version) \
