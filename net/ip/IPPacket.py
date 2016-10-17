@@ -19,7 +19,7 @@ import inspect
 
 from net.Structure import Structure
 
-class IPPacket(Datagram):
+class IPPacket(Structure):
     PROTOCOLS = {
         0:      'IPv6 Hop-by-Hop Option (HOPOPT)',               # RFC 2460
         1:      'Internet Control Message Protocol (ICMP)',      # RFC 792
