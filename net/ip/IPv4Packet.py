@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with NetPy.  If not, see <http://www.gnu.org/licenses/>.
 
-import struct
+from bitstring import BitStream
 import logging
 import ipaddress
 
@@ -23,58 +23,136 @@ from net.ip.IPPacket import IPPacket
 
 logger = logging.getLogger(__name__)
 class IPv4Packet(IPPacket):
+    IP_OPTION_CLASS_CONTROL = 0
+    # (reserved) = 1
+    IP_OPTION_CLASS_DEBUG_MEASURE = 2
+    # (reserved) = 3
+
+    # IP_OPTION_CLASS_CONTROL
+    IP_OPTION_NUMBER_END_OF_OPTION_LIST = 0
+    IP_OPTION_NUMBER_NO_OPERATION = 1
+    IP_OPTION_NUMBER_SECURITY = 2
+    IP_OPTION_NUMBER_LOOSE_SOURCE_ROUTING = 3
+    IP_OPTION_NUMBER_RECORD_ROUTE = 7
+    IP_OPTION_NUMBER_STREAM_ID = 8
+    IP_OPTION_NUMBER_STRICT_SOURCE_ROUTING = 9
+
+    # IP_OPTION_CLASS_DEBUG_MEASURE
+    IP_OPTION_NUMBER_INTERNET_TIMESTAMP = 4
+
     @staticmethod
     def from_bytes(buf):
+        bs = BitStream(bytes=buf)
         pkt = IPv4Packet()
-        (
-            b1,
-            b2,
-            pkt.total_length,
-            pkt.identification,
-            i1,
-            pkt.time_to_live,
-            pkt.protocol,
-            pkt.header_checksum,
-            src,
-            dest,
-        ) = struct.unpack_from('>BBHHHBBHLL', buf)
-        pkt.version = b1 >> 4
-        pkt.ihl = b1 & 0xF
-        pkt.dscp = b2 >> 2
-        pkt.ecn = b2 & 0x3
-        pkt.flags = i1 >> 13
-        pkt.flag_reserved = (pkt.flags >> 7) == 1
-        pkt.flag_dont_fragment = ((pkt.flags >> 6) & 0x1) == 1
-        pkt.flag_more_fragments = ((pkt.flags >> 5) & 0x1) == 1
-        pkt.fragment_offset = i1 & 0x1FFF
-        pkt.source = ipaddress.IPv4Address(src)
-        pkt.destination = ipaddress.IPv4Address(dest)
+
+        pkt.version = bs.read('uint:4')
+        pkt.ihl = bs.read('uint:4')
+        pkt.dscp = bs.read('uint:6')
+        pkt.ecn = bs.read('uint:2')
+        pkt.total_length = bs.read('uint:16')
+        pkt.ident = bs.read('uint:16')
+        pkt.flag_reserved = bs.read('bool')
+        pkt.flag_dont_fragment = bs.read('bool')
+        pkt.flag_more_fragments = bs.read('bool')
+        pkt.fragment_offset = bs.read('uint:13')
+        pkt.time_to_live = bs.read('uint:8')
+        pkt.protocol = bs.read('uint:8')
+        # The checksum field is the 16 bit one's complement of the one's
+        # complement sum of all 16 bit words in the header.  For purposes of
+        # computing the checksum, the value of the checksum field is zero.
+        pkt.header_checksum = bs.read('uint:16')
+        pkt.source = ipaddress.IPv4Address(bs.read('uint:32'))
+        pkt.destination = ipaddress.IPv4Address(bs.read('uint:32'))
+
         if pkt.ihl == 5:
             pkt.options = None
-            pkt.data = buf[20:]
         elif pkt.ihl >= 6 and pkt.ihl <= 15:
-            pkt.options = buf[20:(pkt.ihl * 4)]
-            pkt.data = buf[(20 + pkt.ihl * 4):]
+            pkt.options = []
+            while(True):
+                if bs.bytepos >= pkt.ihl * 8:
+                    break
+                option = {}
+                option['copy'] = bs.read('bool')
+                option['class'] = bs.read('uint:2')
+                option['number'] = bs.read('uint:5')
+
+                if option['class'] == IPv4Packet.IP_OPTION_CLASS_CONTROL:
+                    if option['number'] == IPv4Packet.IP_OPTION_NUMBER_END_OF_OPTION_LIST:
+                        # end of options list
+                        # no length or data
+                        break
+                    elif option['number'] == IPv4Packet.IP_OPTION_NUMBER_NO_OPERATION:
+                        # no operation
+                        # no length or data
+                        pass
+                    elif option['number'] == IPv4Packet.IP_OPTION_NUMBER_SECURITY:
+                        # Security RFC 791
+                        # 11 octet length
+                        option['length'] = bs.unpack('uint:8')
+                        if option['length'] != 11:
+                            raise RuntimeError('Security IP Option with length other than 11')
+                        option['data'] = bs.unpack('bytes:' + str(option['length'] - 2))
+                    elif option['number'] == IPv4Packet.IP_OPTION_NUMBER_LOOSE_SOURCE_ROUTING:
+                        # Loose Source Routing
+                        # var octet length
+                        option['length'] = bs.unpack('uint:8')
+                        option['data'] = bs.unpack('bytes:' + str(option['length'] - 2))
+                    elif option['number'] == IPv4Packet.IP_OPTION_NUMBER_RECORD_ROUTE:
+                        # Record Route
+                        # var octet length
+                        option['length'] = bs.unpack('uint:8')
+                        option['data'] = bs.unpack('bytes:' + str(option['length'] - 2))
+                    elif option['number'] == IPv4Packet.IP_OPTION_NUMBER_STREAM_ID:
+                        # Stream ID
+                        # 4 octet length
+                        option['length'] = bs.unpack('uint:8')
+                        if option['length'] != 4:
+                            raise RuntimeError('Stream ID IP Option with length other than 4')
+                        option['data'] = bs.unpack('bytes:' + str(option['length'] - 2))
+                    elif option['number'] == IPv4Packet.IP_OPTION_NUMBER_STRICT_SOURCE_ROUTING:
+                        # Strict Source Routing
+                        # var octet length
+                        option['length'] = bs.unpack('uint:8')
+                        option['data'] = bs.unpack('bytes:' + str(option['length'] - 2))
+                    else:
+                        raise RuntimeError('Unknown IP option: ' \
+                            + 'class: ' + str(option['class'] \
+                            + ', number: ' + str(option['number'])))
+                elif option['class'] == IPv4Packet.IP_OPTION_CLASS_DEBUG_MEASURE:
+                    if option['number'] == IPv4Packet.IP_OPTION_NUMBER_INTERNET_TIMESTAMP:
+                        # Internet Timestamp
+                        # var octet length
+                        option['length'] = bs.unpack('uint:8')
+                        option['data'] = bs.unpack('bytes:' + str(option['length'] - 2))
+                    else:
+                        raise RuntimeError('Unknown IP option: ' \
+                            + 'class: ' + str(option['class'] \
+                            + ', number: ' + str(option['number'])))
+                else:
+                    raise RuntimeError('Unknown IP option class: ' + str(option['class']))
+
         else:
             raise RuntimeError('Invalid IHL value for packet: ' + str(pkt.ihl))
+
+        pkt.data = buf[(pkt.ihl * 4):]
+
         return pkt
 
     def __str__(self):
-        if self.ihl > 5:
-            opt = ', Options: ' + self.options
-        else:
-            opt = ''
         return 'IP Packet Version: ' + str(self.version) \
             + ', IHL: ' + str(self.ihl) \
             + ', DSCP: ' + str(self.dscp) \
             + ', ECN: ' + str(self.ecn) \
             + ', Total Length: ' + str(self.total_length) \
-            + ', Flags: ' + str(self.flags) \
-            + ', Identification: ' + str(self.identification) \
+            + ', Flags: [' \
+            +   ('RESERVED,' if self.flag_reserved else 'Reserved,') \
+            +   ('Don\'t Fragment,' if self.flag_dont_fragment else 'May Fragment,') \
+            +   ('More Fragments]' if self.flag_more_fragments else 'Last Fragment]') \
+            + ', Identification: ' + str(self.ident) \
             + ', Fragment Offset: ' + str(self.fragment_offset) \
             + ', Time To Live: ' + str(self.time_to_live) \
             + ', Protocol: ' + str(self.protocol) \
             + ', Header Checksum: ' + self.header_checksum.hex \
             + ', Source IP Address: ' + self.source \
             + ', Destination IP Address: ' + self.destination \
-            + opt
+            + (', Options: ' + str(self.options) if self.ihl > 5 else '')
