@@ -17,9 +17,9 @@
 
 import inspect
 
-from net.Message import Message
+from net.Datagram import Datagram
 
-class IPPacket(Message):
+class IPPacket(Datagram):
     PROTOCOLS = {
         0:      'IPv6 Hop-by-Hop Option (HOPOPT)',               # RFC 2460
         1:      'Internet Control Message Protocol (ICMP)',      # RFC 792
