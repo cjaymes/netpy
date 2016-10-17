@@ -17,7 +17,7 @@
 
 import inspect
 
-from net.Datagram import Datagram
+from net.Structure import Structure
 
 class IPPacket(Datagram):
     PROTOCOLS = {

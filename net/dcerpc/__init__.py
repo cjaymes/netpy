@@ -14,15 +14,3 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with NetPy.  If not, see <http://www.gnu.org/licenses/>.
-
-import inspect
-import logging
-
-logger = logging.getLogger(__name__)
-class Datagram():
-    @staticmethod
-    def from_bytes(buf):
-        raise NotImplementedError(inspect.stack()[0][3] + '() has not been implemented in subclass: ' + self.__class__.__name__)
-
-    def to_bytes():
-        raise NotImplementedError(inspect.stack()[0][3] + '() has not been implemented in subclass: ' + self.__class__.__name__)
