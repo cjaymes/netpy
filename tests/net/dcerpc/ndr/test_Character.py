@@ -15,27 +15,26 @@
 # You should have received a copy of the GNU General Public License
 # along with NetPy.  If not, see <http://www.gnu.org/licenses/>.
 
-from bitstring import BitStream
+import sys
+import os
+sys.path.insert(0, os.path.abspath("."))
 import logging
+logging.basicConfig(level=logging.DEBUG)
 
-from net.dcerpc.ndr.Primitive import Primitive
+from net.dcerpc.ndr.Character import Character
 
-logger = logging.getLogger(__name__)
-class Character(Primitive):
-    _FORMAT = (
-        ('value', 'bytes:1'),
-    )
+def test_from_bytes():
+    val = Character.from_bytes(b'a')
+    assert(val == 'a')
+    val = Character.from_bytes(b'A')
+    assert(val == 'A')
+    val = Character.from_bytes(b'5')
+    assert(val == '5')
+    val = Character.from_bytes(b'.')
+    assert(val == '.')
 
-    def _set_field_value(self, name, value):
-        if name == 'value':
-            # TODO: EBCDIC encoding
-            setattr(self, name, value.decode())
-        else:
-            super()._set_field_value(name, value)
-
-    def _get_field_value(self, name):
-        if name == 'value':
-            # TODO: EBCDIC encoding
-            return getattr(self, name).encode()
-        else:
-            return super()._get_field_value(name)
+def test_to_bytes():
+    val = Character('a')
+    assert(val.to_bytes() == b'a')
+    val = Character('!')
+    assert(val.to_bytes() == b'!')
