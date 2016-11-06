@@ -27,9 +27,9 @@ TEST1 = b'\x00\x00\x00\x00'
 
 def test_from_bytes():
     lbl = FormatLabel.from_bytes(TEST1)
-    assert(lbl.int_repr == FormatLabel.FORMAT_CHAR_ASCII)
+    assert(lbl.int_repr == FormatLabel.CHAR_FORMAT_ASCII)
     assert(lbl.char_repr == FormatLabel.BYTE_ORDER_BIG_ENDIAN)
-    assert(lbl.float_repr == FormatLabel.FORMAT_FLOAT_IEEE)
+    assert(lbl.float_repr == FormatLabel.FLOAT_FORMAT_IEEE)
 
 def test_to_bytes():
     lbl = FormatLabel.from_bytes(TEST1)

@@ -29,13 +29,14 @@ class FormatLabel(Structure):
         ('reserved0', 'pad:8'),
         ('reserved1', 'pad:8'),
     )
-    FORMAT_CHAR_ASCII = 0
-    FORMAT_CHAR_EBCDIC = 1
+
+    CHAR_FORMAT_ASCII = 0
+    CHAR_FORMAT_EBCDIC = 1
 
     BYTE_ORDER_BIG_ENDIAN = 0
     BYTE_ORDER_LITTLE_ENDIAN = 1
 
-    FORMAT_FLOAT_IEEE   = 0
-    FORMAT_FLOAT_VAX    = 1
-    FORMAT_FLOAT_CRAY   = 2
-    FORMAT_FLOAT_IBM    = 3
+    FLOAT_FORMAT_IEEE   = 0
+    FLOAT_FORMAT_VAX    = 1
+    FLOAT_FORMAT_CRAY   = 2
+    FLOAT_FORMAT_IBM    = 3
